@@ -31,16 +31,23 @@ jobs:
           name: EspacioLibre-apk
           path: EspacioLibre.apk
 
-      # Publica el APK como "Versión de prueba" con enlace de descarga directa
-      - name: Publicar versión de prueba
+      # Cada compilación crea su propia versión en GitHub (v1.0.N), marcada como la última.
+      # La app consulta /releases/latest, así que siempre encuentra la más nueva.
+      # Despeja.apk es una copia para las instalaciones antiguas, que buscan ese nombre.
+      - name: Publicar versión
+        if: github.ref == 'refs/heads/main'
+        run: cp EspacioLibre.apk Despeja.apk
+
+      - name: Crear versión en GitHub
         if: github.ref == 'refs/heads/main'
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: prueba
-          name: Versión de prueba
+          tag_name: v1.0.${{ github.run_number }}
+          target_commitish: ${{ github.sha }}
+          name: Espacio Libre 1.0.${{ github.run_number }}
           body: |
-            APK de Espacio Libre (compilación ${{ github.run_number }}).
-            Descarga `EspacioLibre.apk` en tu Android y ábrelo para instalar. Si ya tienes la app, se actualiza sola desde dentro.
+            Espacio Libre 1.0.${{ github.run_number }}.
+            Descarga `EspacioLibre.apk` en tu Android y ábrelo para instalar. Si ya tienes la app, se actualiza desde dentro.
 
             Novedades:
             ${{ github.event.head_commit.message }}
@@ -48,4 +55,6 @@ jobs:
             build: ${{ github.run_number }}
           prerelease: false
           make_latest: true
-          files: EspacioLibre.apk
+          files: |
+            EspacioLibre.apk
+            Despeja.apk
