@@ -41,6 +41,6 @@ jobs:
           body: |
             APK de prueba de Despeja (compilación ${{ github.run_number }}).
             Descarga `Despeja.apk` en tu Android y ábrelo para instalar.
-          prerelease: true
-          make_latest: false
+          prerelease: false
+          make_latest: true
           files: Despeja.apk
