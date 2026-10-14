@@ -90,8 +90,8 @@ fun HomeScreen(
 
             Spacer(Modifier.height(16.dp))
             Button(
-                onClick = onScan,
-                enabled = state.hasStorageAccess,
+                // Siempre pulsable: sin permiso, lleva directamente a concederlo.
+                onClick = { if (state.hasStorageAccess) onScan() else onRequestStorage() },
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(56.dp),
