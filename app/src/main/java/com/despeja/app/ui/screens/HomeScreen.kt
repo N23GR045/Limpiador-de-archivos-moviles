@@ -70,7 +70,7 @@ fun HomeScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Despeja", fontWeight = FontWeight.SemiBold) },
+                title = { Text("Espacio Libre", fontWeight = FontWeight.SemiBold) },
                 actions = {
                     IconButton(onClick = onCheckUpdates) {
                         BadgedBox(badge = { if (updateAvailable) Badge() }) {
@@ -142,7 +142,7 @@ fun HomeScreen(
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 Text(
-                    "Despeja ${Updater.currentName}" + if (updateAvailable) " · hay una versión nueva" else "",
+                    "Espacio Libre ${Updater.currentName}" + if (updateAvailable) " · hay una versión nueva" else "",
                     style = MaterialTheme.typography.bodySmall,
                     color = if (updateAvailable) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
                     modifier = Modifier.weight(1f),

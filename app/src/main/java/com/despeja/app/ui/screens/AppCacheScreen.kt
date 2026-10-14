@@ -81,7 +81,7 @@ fun AppCacheScreen(
                         Column(Modifier.padding(16.dp)) {
                             Text("Permiso de acceso a uso", style = MaterialTheme.typography.titleMedium)
                             Text(
-                                "Android solo deja ver cuánto ocupa la caché de cada app si activas Despeja en " +
+                                "Android solo deja ver cuánto ocupa la caché de cada app si activas Espacio Libre en " +
                                     "Ajustes › Acceso a datos de uso.",
                                 style = MaterialTheme.typography.bodyMedium,
                                 modifier = Modifier.padding(vertical = 8.dp),

@@ -24,12 +24,12 @@ jobs:
         run: |
           chmod +x gradlew
           ./gradlew assembleDebug --no-daemon
-          cp app/build/outputs/apk/debug/app-debug.apk Despeja.apk
+          cp app/build/outputs/apk/debug/app-debug.apk EspacioLibre.apk
 
       - uses: actions/upload-artifact@v4
         with:
-          name: Despeja-apk
-          path: Despeja.apk
+          name: EspacioLibre-apk
+          path: EspacioLibre.apk
 
       # Publica el APK como "Versión de prueba" con enlace de descarga directa
       - name: Publicar versión de prueba
@@ -39,10 +39,10 @@ jobs:
           tag_name: prueba
           name: Versión de prueba
           body: |
-            APK de prueba de Despeja (compilación ${{ github.run_number }}).
-            Descarga `Despeja.apk` en tu Android y ábrelo para instalar.
+            APK de prueba de Espacio Libre (compilación ${{ github.run_number }}).
+            Descarga `EspacioLibre.apk` en tu Android y ábrelo para instalar.
 
             build: ${{ github.run_number }}
           prerelease: false
           make_latest: true
-          files: Despeja.apk
+          files: EspacioLibre.apk

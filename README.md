@@ -1,4 +1,4 @@
-# Despeja — limpiador de almacenamiento para Android
+# Espacio Libre — limpiador de almacenamiento para Android
 
 App nativa (Kotlin + Jetpack Compose) que analiza el almacenamiento interno y propone qué borrar.
 
@@ -41,10 +41,10 @@ app/src/main/java/com/despeja/app/
 
 ## Compilar
 
-**Android Studio:** abre la carpeta `Despeja`, espera a que sincronice Gradle y pulsa ▶ con un móvil Android conectado.
+**Android Studio:** abre la carpeta del proyecto, espera a que sincronice Gradle y pulsa ▶ con un móvil Android conectado.
 
 **Sin instalar nada (GitHub):** sube la carpeta a un repositorio de GitHub. El workflow
-`.github/workflows/build-apk.yml` compila solo; descarga el APK en la pestaña *Actions* → última ejecución → *Despeja-apk*.
+`.github/workflows/build-apk.yml` compila solo; descarga el APK en la pestaña *Actions* → última ejecución → *EspacioLibre-apk* (o en Releases).
 
 Requisitos: Android 8.0 o superior.
 

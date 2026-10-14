@@ -34,7 +34,7 @@ object Updater {
                 connectTimeout = 10_000
                 readTimeout = 10_000
                 setRequestProperty("Accept", "application/vnd.github+json")
-                setRequestProperty("User-Agent", "Despeja-Android")
+                setRequestProperty("User-Agent", "EspacioLibre-Android")
             }
             val code = conn.responseCode
             if (code != 200) return@withContext Result.Error("GitHub respondió $code")
