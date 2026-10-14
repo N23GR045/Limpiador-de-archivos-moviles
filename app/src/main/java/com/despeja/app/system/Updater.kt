@@ -47,15 +47,18 @@ object Updater {
                 ?: return@withContext Result.Error("No se encontró el número de versión")
 
             val assets = json.optJSONArray("assets")
+            // Si hay varios APK (p. ej. con el nombre antiguo), se usa el subido más recientemente.
             var apkUrl: String? = null
             var size = 0L
+            var newest = ""
             if (assets != null) {
                 for (i in 0 until assets.length()) {
                     val a = assets.getJSONObject(i)
-                    if (a.optString("name").endsWith(".apk")) {
+                    val updated = a.optString("updated_at")
+                    if (a.optString("name").endsWith(".apk") && updated > newest) {
+                        newest = updated
                         apkUrl = a.optString("browser_download_url")
                         size = a.optLong("size")
-                        break
                     }
                 }
             }
