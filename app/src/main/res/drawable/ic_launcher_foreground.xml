@@ -1,15 +1,14 @@
 <?xml version="1.0" encoding="utf-8"?>
+<!-- Logo F3 "Móvil sólido": teléfono blanco con destello recortado -->
 <vector xmlns:android="http://schemas.android.com/apk/res/android"
-    android:width="108dp"
-    android:height="108dp"
-    android:viewportWidth="108"
-    android:viewportHeight="108">
-    <!-- Destello grande -->
-    <path
-        android:fillColor="#FFFFFF"
-        android:pathData="M50,30 C52,46 57,51 73,53 C57,55 52,60 50,76 C48,60 43,55 27,53 C43,51 48,46 50,30 Z" />
-    <!-- Destello pequeño -->
-    <path
-        android:fillColor="#B9F2DC"
-        android:pathData="M70,30 C71,36 73,38 79,39 C73,40 71,42 70,48 C69,42 67,40 61,39 C67,38 69,36 70,30 Z" />
+    android:width="108dp" android:height="108dp"
+    android:viewportWidth="512" android:viewportHeight="512">
+    <group android:pivotX="256" android:pivotY="256" android:scaleX="0.86" android:scaleY="0.86">
+        <path android:fillColor="#FFFFFF" android:pathData="M202,96 H310 A38,38 0 0 1 348,134 V378 A38,38 0 0 1 310,416 H202 A38,38 0 0 1 164,378 V134 A38,38 0 0 1 202,96 Z" />
+        <path android:fillColor="#0E7C61" android:fillAlpha="0.35" android:pathData="M237,120 H275 A5,5 0 0 1 280,125 V125 A5,5 0 0 1 275,130 H237 A5,5 0 0 1 232,125 V125 A5,5 0 0 1 237,120 Z" />
+        <path android:fillColor="#0E7C61" android:pathData="M256,178 C267.2,236.8 267.2,236.8 326,248 C267.2,259.2 267.2,259.2 256,318 C244.8,259.2 244.8,259.2 186,248 C244.8,236.8 244.8,236.8 256,178 Z" />
+        <path android:fillColor="#16A383" android:pathData="M310,158 C313.2,174.8 313.2,174.8 330,178 C313.2,181.2 313.2,181.2 310,198 C306.8,181.2 306.8,181.2 290,178 C306.8,174.8 306.8,174.8 310,158 Z" />
+        <path android:fillColor="#0E7C61" android:fillAlpha="0.2" android:pathData="M211,362 H301 A11,11 0 0 1 312,373 V373 A11,11 0 0 1 301,384 H211 A11,11 0 0 1 200,373 V373 A11,11 0 0 1 211,362 Z" />
+        <path android:fillColor="#0E7C61" android:pathData="M211,362 H229 A11,11 0 0 1 240,373 V373 A11,11 0 0 1 229,384 H211 A11,11 0 0 1 200,373 V373 A11,11 0 0 1 211,362 Z" />
+    </group>
 </vector>
