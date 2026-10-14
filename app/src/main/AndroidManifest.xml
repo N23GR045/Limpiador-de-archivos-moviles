@@ -2,6 +2,9 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools">
 
+    <!-- Comprobar si hay una versión nueva en GitHub -->
+    <uses-permission android:name="android.permission.INTERNET" />
+
     <!-- Android 8–10: permisos clásicos de almacenamiento -->
     <uses-permission
         android:name="android.permission.READ_EXTERNAL_STORAGE"
@@ -25,6 +28,7 @@
         tools:ignore="QueryAllPackagesPermission" />
 
     <application
+        android:name=".DespejaApplication"
         android:allowBackup="false"
         android:icon="@mipmap/ic_launcher"
         android:roundIcon="@mipmap/ic_launcher"

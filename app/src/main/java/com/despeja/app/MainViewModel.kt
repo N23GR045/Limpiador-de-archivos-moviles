@@ -15,6 +15,7 @@ import com.despeja.app.system.FileOps
 import com.despeja.app.system.Permissions
 import com.despeja.app.system.StorageInfo
 import com.despeja.app.system.TrashManager
+import com.despeja.app.system.Updater
 import com.despeja.app.ui.formatSize
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
@@ -47,6 +48,9 @@ data class UiState(
     val trash: List<TrashEntry> = emptyList(),
     val working: Boolean = false,
     val message: String? = null,
+    val update: Updater.Result? = null,
+    val checkingUpdate: Boolean = false,
+    val showUpdateDialog: Boolean = false,
 ) {
     val scanning: Boolean get() = screen == Screen.Scanning
     val appCacheTotal: Long get() = appCaches.sumOf { it.cacheBytes }
@@ -67,6 +71,7 @@ class MainViewModel(private val app: Application) : AndroidViewModel(app) {
 
     init {
         refresh()
+        checkForUpdates(manual = false)
     }
 
     /** Se llama al arrancar y cada vez que la app vuelve a primer plano (p. ej. desde Ajustes). */
@@ -139,21 +144,28 @@ class MainViewModel(private val app: Application) : AndroidViewModel(app) {
         s.copy(selections = s.selections + (category to next))
     }
 
-    fun selectAll(category: Category, all: Boolean) = _state.update { s ->
-        val files = s.result?.categories?.get(category)?.files.orEmpty()
-        val next = if (all) files.mapTo(HashSet()) { it.path } else emptySet()
+    /** Marca o desmarca solo los archivos indicados (los que se ven con el filtro actual). */
+    fun setSelected(category: Category, paths: Collection<String>, selected: Boolean) = _state.update { s ->
+        val current = s.selections[category].orEmpty()
+        val next = if (selected) current + paths else current - paths.toSet()
         s.copy(selections = s.selections + (category to next))
     }
 
-    fun selectRecommended(category: Category) = _state.update { s ->
+    /** Aplica la selección recomendada solo dentro de los archivos indicados. */
+    fun selectRecommended(category: Category, paths: Collection<String>) = _state.update { s ->
+        val scope = paths.toSet()
         val rec = s.result?.categories?.get(category)?.defaultSelection.orEmpty()
-        s.copy(selections = s.selections + (category to rec))
+        val current = s.selections[category].orEmpty()
+        val next = (current - scope) + rec.intersect(scope)
+        s.copy(selections = s.selections + (category to next))
     }
 
     // ---------- Borrado ----------
 
-    fun deleteSelected(category: Category, useTrash: Boolean) {
-        val paths = _state.value.selections[category].orEmpty()
+    /** Borra lo marcado. Con [onlyPaths], solo lo marcado dentro de ese conjunto (lo visible con el filtro). */
+    fun deleteSelected(category: Category, useTrash: Boolean, onlyPaths: Set<String>? = null) {
+        val marked = _state.value.selections[category].orEmpty()
+        val paths = if (onlyPaths == null) marked else marked.intersect(onlyPaths)
         if (paths.isEmpty()) return
         _state.update { it.copy(working = true) }
         viewModelScope.launch {
@@ -224,4 +236,24 @@ class MainViewModel(private val app: Application) : AndroidViewModel(app) {
             loadTrash(purge = false)
         }
     }
+
+    // ---------- Actualizaciones ----------
+
+    fun checkForUpdates(manual: Boolean) {
+        if (_state.value.checkingUpdate) return
+        _state.update { it.copy(checkingUpdate = true) }
+        viewModelScope.launch {
+            val r = Updater.check()
+            _state.update {
+                it.copy(
+                    update = r,
+                    checkingUpdate = false,
+                    // Al abrir la app solo se avisa si hay versión nueva; a mano, siempre se responde.
+                    showUpdateDialog = manual || r is Updater.Result.Available,
+                )
+            }
+        }
+    }
+
+    fun dismissUpdateDialog() = _state.update { it.copy(showUpdateDialog = false) }
 }

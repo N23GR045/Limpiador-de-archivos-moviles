@@ -9,3 +9,6 @@
 .externalNativeBuild/
 .cxx/
 *.keystore
+
+# Firma fija para que las actualizaciones se instalen encima
+!app/debug.keystore

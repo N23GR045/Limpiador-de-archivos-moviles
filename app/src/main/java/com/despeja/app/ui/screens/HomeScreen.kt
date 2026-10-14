@@ -18,6 +18,9 @@ import androidx.compose.material.icons.outlined.Apps
 import androidx.compose.material.icons.outlined.Delete
 import androidx.compose.material.icons.outlined.FolderOpen
 import androidx.compose.material.icons.outlined.Search
+import androidx.compose.material.icons.outlined.SystemUpdate
+import androidx.compose.material3.TextButton
+import com.despeja.app.system.Updater
 import androidx.compose.material3.Badge
 import androidx.compose.material3.BadgedBox
 import androidx.compose.material3.Button
@@ -61,12 +64,19 @@ fun HomeScreen(
     onOpenCategory: (Category) -> Unit,
     onOpenAppCache: () -> Unit,
     onOpenTrash: () -> Unit,
+    onCheckUpdates: () -> Unit,
 ) {
+    val updateAvailable = state.update is Updater.Result.Available
     Scaffold(
         topBar = {
             TopAppBar(
                 title = { Text("Despeja", fontWeight = FontWeight.SemiBold) },
                 actions = {
+                    IconButton(onClick = onCheckUpdates) {
+                        BadgedBox(badge = { if (updateAvailable) Badge() }) {
+                            Icon(Icons.Outlined.SystemUpdate, contentDescription = "Buscar actualizaciones")
+                        }
+                    }
                     IconButton(onClick = onOpenTrash) {
                         BadgedBox(badge = { if (state.trash.isNotEmpty()) Badge { Text("${state.trash.size}") } }) {
                             Icon(Icons.Outlined.Delete, contentDescription = "Papelera")
@@ -123,6 +133,24 @@ fun HomeScreen(
                 Spacer(Modifier.height(8.dp))
             }
             AppCacheCard(state, onOpenAppCache)
+
+            // Versión instalada y comprobación manual de actualizaciones
+            Row(
+                Modifier
+                    .fillMaxWidth()
+                    .padding(top = 20.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Text(
+                    "Despeja ${Updater.currentName}" + if (updateAvailable) " · hay una versión nueva" else "",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = if (updateAvailable) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.weight(1f),
+                )
+                TextButton(onClick = onCheckUpdates, enabled = !state.checkingUpdate) {
+                    Text(if (state.checkingUpdate) "Comprobando…" else if (updateAvailable) "Actualizar" else "Buscar actualizaciones")
+                }
+            }
         }
     }
 }

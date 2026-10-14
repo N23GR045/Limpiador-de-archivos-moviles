@@ -18,6 +18,8 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.despeja.app.MainViewModel
 import com.despeja.app.Screen
 import com.despeja.app.system.Permissions
+import com.despeja.app.system.Updater
+import com.despeja.app.ui.components.UpdateDialog
 import com.despeja.app.ui.screens.AppCacheScreen
 import com.despeja.app.ui.screens.CategoryScreen
 import com.despeja.app.ui.screens.HomeScreen
@@ -65,6 +67,7 @@ fun DespejaApp(vm: MainViewModel = viewModel()) {
             onOpenCategory = { vm.open(Screen.CategoryDetail(it)) },
             onOpenAppCache = { vm.open(Screen.AppCache) },
             onOpenTrash = { vm.open(Screen.Trash) },
+            onCheckUpdates = { vm.checkForUpdates(manual = true) },
         )
 
         Screen.Scanning -> ScanningScreen(progress = state.progress, onCancel = vm::cancelScan)
@@ -77,9 +80,9 @@ fun DespejaApp(vm: MainViewModel = viewModel()) {
             snackbarHost = snackHost,
             onBack = vm::back,
             onToggle = { vm.toggle(screen.category, it) },
-            onSelectAll = { vm.selectAll(screen.category, it) },
-            onSelectRecommended = { vm.selectRecommended(screen.category) },
-            onDelete = { useTrash -> vm.deleteSelected(screen.category, useTrash) },
+            onSetSelected = { paths, selected -> vm.setSelected(screen.category, paths, selected) },
+            onSelectRecommended = { paths -> vm.selectRecommended(screen.category, paths) },
+            onDelete = { useTrash, paths -> vm.deleteSelected(screen.category, useTrash, paths) },
         )
 
         Screen.AppCache -> AppCacheScreen(
@@ -99,6 +102,19 @@ fun DespejaApp(vm: MainViewModel = viewModel()) {
             onBack = vm::back,
             onRestore = vm::restore,
             onEmpty = vm::emptyTrash,
+        )
+    }
+
+    val update = state.update
+    if (state.showUpdateDialog && update != null) {
+        UpdateDialog(
+            result = update,
+            onDownload = { url ->
+                Updater.openDownload(context, url)
+                vm.dismissUpdateDialog()
+            },
+            onRetry = { vm.checkForUpdates(manual = true) },
+            onDismiss = vm::dismissUpdateDialog,
         )
     }
 }

@@ -2,6 +2,7 @@ package com.despeja.app.ui.screens
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -17,15 +18,18 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.outlined.Android
+import androidx.compose.material.icons.outlined.Attachment
 import androidx.compose.material.icons.outlined.AudioFile
 import androidx.compose.material.icons.outlined.Description
 import androidx.compose.material.icons.outlined.FolderZip
 import androidx.compose.material.icons.outlined.Image
-import androidx.compose.material.icons.outlined.Attachment
 import androidx.compose.material.icons.outlined.Movie
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
@@ -33,6 +37,7 @@ import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Checkbox
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.FilterChip
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -62,12 +67,31 @@ import coil.request.ImageRequest
 import com.despeja.app.model.AutoSelect
 import com.despeja.app.model.Category
 import com.despeja.app.model.CategoryResult
+import com.despeja.app.model.FileGroup
 import com.despeja.app.model.FileItem
 import com.despeja.app.model.FileType
+import com.despeja.app.ui.components.MediaPreview
 import com.despeja.app.ui.daysAgo
 import com.despeja.app.ui.formatSize
 import com.despeja.app.ui.plural
 import java.io.File
+
+/** Filtro por tipo para separar fotos, vídeos y el resto. */
+enum class TypeFilter(val label: String) {
+    ALL("Todo"), PHOTOS("Fotos"), VIDEOS("Vídeos"), OTHER("Otros");
+
+    fun matches(type: FileType): Boolean = when (this) {
+        ALL -> true
+        PHOTOS -> type == FileType.IMAGES
+        VIDEOS -> type == FileType.VIDEOS
+        OTHER -> type != FileType.IMAGES && type != FileType.VIDEOS
+    }
+}
+
+/** Categorías mezcladas en las que tiene sentido separar por tipo. */
+private val FILTERABLE = setOf(Category.DUPLICATES, Category.LARGE, Category.OLD_DOWNLOADS)
+
+private fun FileItem.isMedia() = type == FileType.IMAGES || type == FileType.VIDEOS
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -79,14 +103,33 @@ fun CategoryScreen(
     snackbarHost: @Composable () -> Unit,
     onBack: () -> Unit,
     onToggle: (String) -> Unit,
-    onSelectAll: (Boolean) -> Unit,
-    onSelectRecommended: () -> Unit,
-    onDelete: (useTrash: Boolean) -> Unit,
+    onSetSelected: (paths: Collection<String>, selected: Boolean) -> Unit,
+    onSelectRecommended: (paths: Collection<String>) -> Unit,
+    onDelete: (useTrash: Boolean, onlyPaths: Set<String>) -> Unit,
 ) {
     var confirm by remember { mutableStateOf(false) }
-    val files = result?.files.orEmpty()
-    val selectedFiles = remember(files, selection) { files.filter { it.path in selection } }
+    var filter by rememberSaveable(category) { mutableStateOf(TypeFilter.ALL) }
+    var preview by remember { mutableStateOf<FileItem?>(null) }
+
+    val allGroups = result?.groups.orEmpty()
+
+    // Grupos visibles con el filtro. En duplicados todas las copias de un grupo son del mismo tipo,
+    // así que se filtra el grupo entero; en listas simples se filtran los archivos.
+    val visibleGroups: List<FileGroup> = remember(allGroups, filter, category) {
+        if (category.grouped) allGroups.filter { g -> filter.matches(g.files.first().type) }
+        else allGroups.map { g -> g.copy(files = g.files.filter { filter.matches(it.type) }) }.filter { it.files.isNotEmpty() }
+    }
+    val visibleFiles = remember(visibleGroups) { visibleGroups.flatMap { it.files } }
+    val visiblePaths = remember(visibleFiles) { visibleFiles.mapTo(HashSet()) { it.path } }
+    val selectedFiles = remember(visibleFiles, selection) { visibleFiles.filter { it.path in selection } }
     val selectedBytes = selectedFiles.sumOf { it.size }
+
+    // Cuántos archivos hay de cada tipo, para los chips.
+    val counts: Map<TypeFilter, Int> = remember(allGroups) {
+        val files = allGroups.flatMap { it.files }
+        TypeFilter.entries.associateWith { f -> files.count { f.matches(it.type) } }
+    }
+    val showFilter = category in FILTERABLE && counts.count { (k, v) -> k != TypeFilter.ALL && v > 0 } > 1
 
     Scaffold(
         topBar = {
@@ -128,9 +171,10 @@ fun CategoryScreen(
                         if (working) {
                             CircularProgressIndicator(Modifier.size(20.dp), strokeWidth = 2.dp, color = Color.White)
                         } else {
+                            val what = if (filter == TypeFilter.ALL) "archivo" else filter.label.lowercase().removeSuffix("s")
                             Text(
                                 if (selectedFiles.isEmpty()) "Marca archivos para limpiar"
-                                else "Limpiar ${plural(selectedFiles.size, "archivo")} · ${formatSize(selectedBytes)}",
+                                else "Limpiar ${plural(selectedFiles.size, what)} · ${formatSize(selectedBytes)}",
                             )
                         }
                     }
@@ -139,7 +183,7 @@ fun CategoryScreen(
         },
         snackbarHost = snackbarHost,
     ) { padding ->
-        if (result == null || files.isEmpty()) {
+        if (result == null || allGroups.isEmpty()) {
             Box(Modifier.padding(padding).fillMaxSize(), contentAlignment = Alignment.Center) {
                 Text("Nada que limpiar aquí ✨", style = MaterialTheme.typography.titleMedium)
             }
@@ -152,22 +196,53 @@ fun CategoryScreen(
         ) {
             item {
                 Hint(category)
+                if (showFilter) {
+                    Row(
+                        Modifier
+                            .fillMaxWidth()
+                            .horizontalScroll(rememberScrollState())
+                            .padding(horizontal = 16.dp, vertical = 4.dp),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    ) {
+                        TypeFilter.entries.filter { it == TypeFilter.ALL || (counts[it] ?: 0) > 0 }.forEach { f ->
+                            FilterChip(
+                                selected = filter == f,
+                                onClick = { filter = f },
+                                label = { Text("${f.label} (${counts[f] ?: 0})") },
+                            )
+                        }
+                    }
+                }
                 SelectionBar(
                     category = category,
                     selected = selectedFiles.size,
-                    total = files.size,
-                    onSelectAll = onSelectAll,
-                    onSelectRecommended = onSelectRecommended,
+                    total = visibleFiles.size,
+                    onSelectAll = { all -> onSetSelected(visiblePaths, all) },
+                    onSelectRecommended = { onSelectRecommended(visiblePaths) },
                 )
             }
 
-            if (category.grouped) {
-                result.groups.forEachIndexed { idx, group ->
+            if (visibleFiles.isEmpty()) {
+                item {
+                    Text(
+                        "No hay ${filter.label.lowercase()} en esta categoría.",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.padding(24.dp),
+                    )
+                }
+            } else if (category.grouped) {
+                visibleGroups.forEachIndexed { idx, group ->
                     item(key = "h-${group.id}") {
                         val extra = group.files.drop(1).sumOf { it.size }
+                        val noun = when {
+                            category == Category.SIMILAR -> "fotos"
+                            group.files.first().type == FileType.IMAGES -> "fotos iguales"
+                            group.files.first().type == FileType.VIDEOS -> "vídeos iguales"
+                            else -> "copias"
+                        }
                         Text(
-                            "Grupo ${idx + 1} · ${group.files.size} ${if (category == Category.DUPLICATES) "copias" else "fotos"} · " +
-                                "${formatSize(extra)} sobrantes",
+                            "Grupo ${idx + 1} · ${group.files.size} $noun · ${formatSize(extra)} sobrantes",
                             style = MaterialTheme.typography.labelLarge,
                             color = MaterialTheme.colorScheme.primary,
                             modifier = Modifier.padding(start = 16.dp, end = 16.dp, top = 18.dp, bottom = 4.dp),
@@ -183,28 +258,43 @@ fun CategoryScreen(
                                 else -> "Más nítida"
                             },
                             onToggle = { onToggle(f.path) },
+                            onPreview = { preview = f },
                         )
                     }
                 }
             } else {
-                items(files, key = { it.path }) { f ->
-                    FileRow(file = f, checked = f.path in selection, badge = null, onToggle = { onToggle(f.path) })
+                items(visibleFiles, key = { it.path }) { f ->
+                    FileRow(
+                        file = f,
+                        checked = f.path in selection,
+                        badge = null,
+                        onToggle = { onToggle(f.path) },
+                        onPreview = { preview = f },
+                    )
                 }
             }
         }
     }
 
+    preview?.let { f ->
+        MediaPreview(
+            file = f,
+            checked = f.path in selection,
+            onToggle = { onToggle(f.path) },
+            onDismiss = { preview = null },
+        )
+    }
+
     if (confirm) {
+        val wipedGroups = if (category.grouped) visibleGroups.count { g -> g.files.all { it.path in selection } } else 0
         ConfirmDeleteDialog(
-            category = category,
-            result = result,
-            selectedFiles = selectedFiles,
-            selection = selection,
+            count = selectedFiles.size,
             selectedBytes = selectedBytes,
+            wipedGroups = wipedGroups,
             onDismiss = { confirm = false },
             onConfirm = { useTrash ->
                 confirm = false
-                onDelete(useTrash)
+                onDelete(useTrash, visiblePaths)
             },
         )
     }
@@ -213,11 +303,11 @@ fun CategoryScreen(
 @Composable
 private fun Hint(category: Category) {
     val text = when (category) {
-        Category.DUPLICATES -> "Se ha marcado todo salvo el original (el más antiguo) de cada grupo."
-        Category.LARGE -> "Archivos de más de 100 MB e instaladores. Nada viene marcado: elige tú."
+        Category.DUPLICATES -> "Se ha marcado todo salvo el original (el más antiguo) de cada grupo. Toca una miniatura para verla."
+        Category.LARGE -> "Archivos de más de 100 MB e instaladores. Nada viene marcado: elige tú. Toca un vídeo para verlo."
         Category.TEMP -> "Archivos que las apps regeneran solas. Seguros de borrar."
         Category.OLD_DOWNLOADS -> "Descargas sin modificar en más de 90 días. Revisa antes de borrar."
-        Category.BLURRY -> "Detección automática: revisa las miniaturas antes de borrar."
+        Category.BLURRY -> "Detección automática: toca cada miniatura para revisarla antes de borrar."
         Category.SIMILAR -> "Se conserva la foto más nítida de cada grupo y se marcan las demás."
     }
     Text(
@@ -252,15 +342,21 @@ private fun SelectionBar(
         if (category.autoSelect != AutoSelect.NONE) {
             TextButton(onClick = onSelectRecommended) { Text("Recomendado") }
         }
-        TextButton(onClick = { onSelectAll(selected < total) }) {
-            Text(if (selected < total) "Todos" else "Ninguno")
+        TextButton(onClick = { onSelectAll(selected < total) }, enabled = total > 0) {
+            Text(if (selected < total || total == 0) "Todos" else "Ninguno")
         }
     }
     HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
 }
 
 @Composable
-private fun FileRow(file: FileItem, checked: Boolean, badge: String?, onToggle: () -> Unit) {
+private fun FileRow(
+    file: FileItem,
+    checked: Boolean,
+    badge: String?,
+    onToggle: () -> Unit,
+    onPreview: () -> Unit,
+) {
     Row(
         Modifier
             .fillMaxWidth()
@@ -269,7 +365,7 @@ private fun FileRow(file: FileItem, checked: Boolean, badge: String?, onToggle: 
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Checkbox(checked = checked, onCheckedChange = { onToggle() })
-        Thumbnail(file)
+        Thumbnail(file, onClick = if (file.isMedia()) onPreview else null)
         Spacer(Modifier.width(12.dp))
         Column(Modifier.weight(1f)) {
             Text(
@@ -309,59 +405,65 @@ private fun FileRow(file: FileItem, checked: Boolean, badge: String?, onToggle: 
 }
 
 @Composable
-private fun Thumbnail(file: FileItem) {
-    val shape = RoundedCornerShape(10.dp)
-    val mod = Modifier
-        .size(48.dp)
-        .clip(shape)
-        .background(MaterialTheme.colorScheme.surfaceVariant)
-    if (file.type == FileType.IMAGES) {
-        AsyncImage(
-            model = ImageRequest.Builder(LocalContext.current)
-                .data(File(file.path))
-                .size(144)
-                .build(),
-            contentDescription = null,
-            contentScale = ContentScale.Crop,
-            modifier = mod,
-        )
-    } else {
-        val icon = when (file.type) {
-            FileType.VIDEOS -> Icons.Outlined.Movie
-            FileType.AUDIO -> Icons.Outlined.AudioFile
-            FileType.DOCUMENTS -> Icons.Outlined.Description
-            FileType.APKS -> Icons.Outlined.Android
-            FileType.ARCHIVES -> Icons.Outlined.FolderZip
-            FileType.IMAGES -> Icons.Outlined.Image
-            FileType.OTHER -> Icons.Outlined.Attachment
+private fun Thumbnail(file: FileItem, onClick: (() -> Unit)?) {
+    val icon = when (file.type) {
+        FileType.VIDEOS -> Icons.Outlined.Movie
+        FileType.AUDIO -> Icons.Outlined.AudioFile
+        FileType.DOCUMENTS -> Icons.Outlined.Description
+        FileType.APKS -> Icons.Outlined.Android
+        FileType.ARCHIVES -> Icons.Outlined.FolderZip
+        FileType.IMAGES -> Icons.Outlined.Image
+        FileType.OTHER -> Icons.Outlined.Attachment
+    }
+    Box(
+        Modifier
+            .size(52.dp)
+            .clip(RoundedCornerShape(10.dp))
+            .background(MaterialTheme.colorScheme.surfaceVariant)
+            .then(if (onClick != null) Modifier.clickable(onClick = onClick) else Modifier),
+        contentAlignment = Alignment.Center,
+    ) {
+        // El icono queda debajo: si la miniatura no se puede generar, se ve el icono.
+        Icon(icon, contentDescription = null, tint = Color(file.type.color))
+        if (file.isMedia()) {
+            AsyncImage(
+                model = ImageRequest.Builder(LocalContext.current)
+                    .data(File(file.path))
+                    .size(156)
+                    .build(),
+                contentDescription = if (file.type == FileType.VIDEOS) "Ver vídeo" else "Ver foto",
+                contentScale = ContentScale.Crop,
+                modifier = Modifier.fillMaxSize(),
+            )
         }
-        Box(mod, contentAlignment = Alignment.Center) {
-            Icon(icon, contentDescription = null, tint = Color(file.type.color))
+        if (file.type == FileType.VIDEOS) {
+            Box(
+                Modifier
+                    .size(24.dp)
+                    .clip(CircleShape)
+                    .background(Color.Black.copy(alpha = 0.55f)),
+                contentAlignment = Alignment.Center,
+            ) {
+                Icon(Icons.Filled.PlayArrow, contentDescription = null, tint = Color.White, modifier = Modifier.size(18.dp))
+            }
         }
     }
 }
 
 @Composable
 private fun ConfirmDeleteDialog(
-    category: Category,
-    result: CategoryResult?,
-    selectedFiles: List<FileItem>,
-    selection: Set<String>,
+    count: Int,
     selectedBytes: Long,
+    wipedGroups: Int,
     onDismiss: () -> Unit,
     onConfirm: (useTrash: Boolean) -> Unit,
 ) {
     // Por seguridad, por defecto todo va a la papelera (recuperable 30 días).
     var useTrash by rememberSaveable { mutableStateOf(true) }
 
-    // Seguridad: avisar si en algún grupo se han marcado TODAS las copias.
-    val wipedGroups = if (category.grouped && result != null) {
-        result.groups.count { g -> g.files.all { it.path in selection } }
-    } else 0
-
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text("¿Limpiar ${plural(selectedFiles.size, "archivo")}?") },
+        title = { Text("¿Limpiar ${plural(count, "archivo")}?") },
         text = {
             Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
                 Text("Se liberarán ${formatSize(selectedBytes)}.")
