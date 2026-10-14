@@ -39,8 +39,11 @@ jobs:
           tag_name: prueba
           name: Versión de prueba
           body: |
-            APK de prueba de Espacio Libre (compilación ${{ github.run_number }}).
-            Descarga `EspacioLibre.apk` en tu Android y ábrelo para instalar.
+            APK de Espacio Libre (compilación ${{ github.run_number }}).
+            Descarga `EspacioLibre.apk` en tu Android y ábrelo para instalar. Si ya tienes la app, se actualiza sola desde dentro.
+
+            Novedades:
+            ${{ github.event.head_commit.message }}
 
             build: ${{ github.run_number }}
           prerelease: false

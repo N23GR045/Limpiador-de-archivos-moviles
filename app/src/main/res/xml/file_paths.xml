@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Carpeta desde la que el instalador de Android puede leer el APK descargado -->
+<paths>
+    <cache-path name="updates" path="updates/" />
+</paths>

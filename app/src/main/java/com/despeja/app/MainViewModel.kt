@@ -26,6 +26,7 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import java.io.File
 
 sealed interface Screen {
     data object Home : Screen
@@ -51,6 +52,12 @@ data class UiState(
     val update: Updater.Result? = null,
     val checkingUpdate: Boolean = false,
     val showUpdateDialog: Boolean = false,
+    /** Progreso de la descarga de la actualización (null = no se está descargando). */
+    val downloadProgress: Float? = null,
+    /** APK ya descargado y listo para instalar. */
+    val downloadedApk: String? = null,
+    /** Android pide permiso para instalar apps desde Espacio Libre. */
+    val needsInstallPermission: Boolean = false,
 ) {
     val scanning: Boolean get() = screen == Screen.Scanning
     val appCacheTotal: Long get() = appCaches.sumOf { it.cacheBytes }
@@ -87,6 +94,13 @@ class MainViewModel(private val app: Application) : AndroidViewModel(app) {
         val s = _state.value
         if (s.hasStorageAccess) loadTrash(purge = true)
         if (s.hasUsageAccess && (!hadUsage || s.appCaches.isEmpty())) loadAppCaches()
+
+        // Si volvemos de conceder el permiso de instalación, se instala directamente.
+        val apk = s.downloadedApk
+        if (apk != null && s.needsInstallPermission && Updater.canInstall(app)) {
+            _state.update { it.copy(needsInstallPermission = false) }
+            Updater.install(app, File(apk))
+        }
     }
 
     // ---------- Navegación ----------
@@ -255,5 +269,50 @@ class MainViewModel(private val app: Application) : AndroidViewModel(app) {
         }
     }
 
-    fun dismissUpdateDialog() = _state.update { it.copy(showUpdateDialog = false) }
+    fun dismissUpdateDialog() {
+        if (_state.value.downloadProgress != null) return // no cerrar a mitad de descarga
+        _state.update { it.copy(showUpdateDialog = false) }
+    }
+
+    private var downloadJob: Job? = null
+
+    /** Descarga el APK desde GitHub dentro de la app y abre el instalador al terminar. */
+    fun downloadUpdate() {
+        val info = _state.value.update as? Updater.Result.Available ?: return
+        if (downloadJob?.isActive == true) return
+        _state.update { it.copy(downloadProgress = 0f, downloadedApk = null, showUpdateDialog = true) }
+        downloadJob = viewModelScope.launch {
+            try {
+                val file = Updater.download(app, info) { p -> _state.update { it.copy(downloadProgress = p) } }
+                _state.update { it.copy(downloadProgress = null, downloadedApk = file.absolutePath) }
+                installDownloaded()
+            } catch (e: CancellationException) {
+                _state.update { it.copy(downloadProgress = null) }
+                throw e
+            } catch (e: Exception) {
+                _state.update {
+                    it.copy(
+                        downloadProgress = null,
+                        update = Updater.Result.Error(e.message ?: "No se pudo descargar"),
+                    )
+                }
+            }
+        }
+    }
+
+    fun cancelDownload() {
+        downloadJob?.cancel()
+    }
+
+    fun installDownloaded() {
+        val apk = _state.value.downloadedApk ?: return
+        if (!Updater.canInstall(app)) {
+            _state.update { it.copy(needsInstallPermission = true) }
+            Updater.openInstallPermission(app)
+            return
+        }
+        if (!Updater.install(app, File(apk))) {
+            _state.update { it.copy(message = "No se pudo abrir el instalador") }
+        }
+    }
 }

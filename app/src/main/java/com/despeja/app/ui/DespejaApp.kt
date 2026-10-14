@@ -18,7 +18,6 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.despeja.app.MainViewModel
 import com.despeja.app.Screen
 import com.despeja.app.system.Permissions
-import com.despeja.app.system.Updater
 import com.despeja.app.ui.components.UpdateDialog
 import com.despeja.app.ui.screens.AppCacheScreen
 import com.despeja.app.ui.screens.CategoryScreen
@@ -109,10 +108,12 @@ fun DespejaApp(vm: MainViewModel = viewModel()) {
     if (state.showUpdateDialog && update != null) {
         UpdateDialog(
             result = update,
-            onDownload = { url ->
-                Updater.openDownload(context, url)
-                vm.dismissUpdateDialog()
-            },
+            downloadProgress = state.downloadProgress,
+            downloaded = state.downloadedApk != null,
+            needsInstallPermission = state.needsInstallPermission,
+            onDownload = vm::downloadUpdate,
+            onCancelDownload = vm::cancelDownload,
+            onInstall = vm::installDownloaded,
             onRetry = { vm.checkForUpdates(manual = true) },
             onDismiss = vm::dismissUpdateDialog,
         )
