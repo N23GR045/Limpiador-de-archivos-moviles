@@ -4,6 +4,9 @@ on:
   push:
   workflow_dispatch:
 
+permissions:
+  contents: write
+
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -21,8 +24,23 @@ jobs:
         run: |
           chmod +x gradlew
           ./gradlew assembleDebug --no-daemon
+          cp app/build/outputs/apk/debug/app-debug.apk Despeja.apk
 
       - uses: actions/upload-artifact@v4
         with:
           name: Despeja-apk
-          path: app/build/outputs/apk/debug/app-debug.apk
+          path: Despeja.apk
+
+      # Publica el APK como "Versión de prueba" con enlace de descarga directa
+      - name: Publicar versión de prueba
+        if: github.ref == 'refs/heads/main'
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: prueba
+          name: Versión de prueba
+          body: |
+            APK de prueba de Despeja (compilación ${{ github.run_number }}).
+            Descarga `Despeja.apk` en tu Android y ábrelo para instalar.
+          prerelease: true
+          make_latest: false
+          files: Despeja.apk
