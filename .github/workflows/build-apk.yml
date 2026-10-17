@@ -2,6 +2,11 @@ name: Compilar APK
 
 on:
   push:
+    # Los cambios solo de documentación no crean una versión nueva de la app.
+    paths-ignore:
+      - "README.md"
+      - "LICENSE"
+      - "docs/**"
   workflow_dispatch:
 
 permissions:

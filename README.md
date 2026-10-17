@@ -15,7 +15,11 @@ Copias, vídeos pesados, restos de apps y fotos repetidas, en un solo análisis 
 
 [**⬇ Descargar la última versión**](https://github.com/N23GR045/Limpiador-de-archivos-moviles/releases/latest/download/EspacioLibre.apk)
 
-<!-- VÍDEO DE PRESENTACIÓN: edita este archivo en github.com, arrastra aquí el .mp4 y GitHub lo incrusta. -->
+<a href="docs/video/EspacioLibre-presentacion.mp4"><img src="docs/video/presentacion.gif" width="540" alt="Vídeo de presentación de Espacio Libre: análisis, resultado, revisión y papelera"></a>
+
+<sub>Toca la animación para ver el vídeo en alta calidad.</sub>
+
+<br>
 
 <img src="docs/capturas/inicio.png" width="260" alt="Pantalla de inicio con el espacio ocupado y lo que se puede liberar">&nbsp;
 <img src="docs/capturas/duplicados.png" width="260" alt="Duplicados filtrados por fotos, con el original sin marcar">&nbsp;
