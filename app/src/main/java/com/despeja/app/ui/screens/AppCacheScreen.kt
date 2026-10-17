@@ -79,9 +79,9 @@ fun AppCacheScreen(
                 if (!state.hasUsageAccess) {
                     Card(colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.tertiaryContainer)) {
                         Column(Modifier.padding(16.dp)) {
-                            Text("Permiso de acceso a uso", style = MaterialTheme.typography.titleMedium)
+                            Text("Ver la caché de cada app", style = MaterialTheme.typography.titleMedium)
                             Text(
-                                "Android solo deja ver cuánto ocupa la caché de cada app si activas Espacio Libre en " +
+                                "Android solo muestra cuánto ocupa la caché de cada app si activas Espacio Libre en " +
                                     "Ajustes › Acceso a datos de uso.",
                                 style = MaterialTheme.typography.bodyMedium,
                                 modifier = Modifier.padding(vertical = 8.dp),
@@ -104,7 +104,7 @@ fun AppCacheScreen(
                     Button(
                         onClick = {
                             if (!state.hasStorageAccess) {
-                                Toast.makeText(context, "Necesita acceso a todos los archivos", Toast.LENGTH_LONG).show()
+                                Toast.makeText(context, "Primero permite el acceso a tus archivos", Toast.LENGTH_LONG).show()
                             } else {
                                 runCatching { clearLauncher.launch(clearIntent) }.onFailure {
                                     Toast.makeText(context, "Tu móvil no permite limpiar toda la caché desde aquí", Toast.LENGTH_LONG).show()
@@ -118,7 +118,7 @@ fun AppCacheScreen(
                             .height(52.dp),
                     ) { Text("Limpiar la caché de todas las apps") }
                     Text(
-                        "Android pedirá confirmación. Las apps no pierden datos ni sesiones, solo archivos que regeneran.",
+                        "Android te pedirá confirmación. No perderás datos ni sesiones: solo se borran archivos temporales.",
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                         modifier = Modifier.padding(top = 6.dp, bottom = 12.dp),
@@ -168,7 +168,7 @@ fun AppCacheScreen(
             if (state.hasUsageAccess && !state.loadingAppCaches && state.appCaches.isEmpty()) {
                 item {
                     Box(Modifier.fillMaxSize().padding(32.dp), contentAlignment = Alignment.Center) {
-                        Text("No hay caché que limpiar ✨")
+                        Text("Ninguna app tiene caché acumulada")
                     }
                 }
             }

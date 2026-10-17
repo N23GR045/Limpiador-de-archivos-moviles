@@ -121,7 +121,7 @@ class MainViewModel(private val app: Application) : AndroidViewModel(app) {
     fun startScan() {
         if (scanJob?.isActive == true) return
         if (!_state.value.hasStorageAccess) {
-            _state.update { it.copy(message = "Primero concede acceso a los archivos") }
+            _state.update { it.copy(message = "Primero permite el acceso a tus archivos") }
             return
         }
         _state.update { it.copy(screen = Screen.Scanning, progress = null) }
@@ -133,7 +133,7 @@ class MainViewModel(private val app: Application) : AndroidViewModel(app) {
                         result = result,
                         selections = result.categories.mapValues { (_, c) -> c.defaultSelection },
                         screen = Screen.Home,
-                        message = "Análisis completado: ${result.scannedFiles} archivos revisados",
+                        message = "Listo: ${result.scannedFiles} archivos revisados",
                     )
                 }
                 if (_state.value.hasUsageAccess) loadAppCaches()
@@ -141,7 +141,7 @@ class MainViewModel(private val app: Application) : AndroidViewModel(app) {
                 _state.update { it.copy(screen = Screen.Home, message = "Análisis cancelado") }
                 throw e
             } catch (e: Exception) {
-                _state.update { it.copy(screen = Screen.Home, message = "Error al analizar: ${e.message}") }
+                _state.update { it.copy(screen = Screen.Home, message = "No se pudo terminar el análisis. Inténtalo de nuevo.") }
             }
         }
     }
@@ -186,14 +186,15 @@ class MainViewModel(private val app: Application) : AndroidViewModel(app) {
             val outcome = withContext(Dispatchers.IO) { fileOps.remove(paths, useTrash) }
             _state.update { s ->
                 val removed = outcome.removed
-                val verb = if (useTrash) "Movidos a la papelera" else "Liberados"
+                val done = if (useTrash) "${formatSize(outcome.bytes)} en la papelera. Vacíala para liberar el espacio"
+                else "Has liberado ${formatSize(outcome.bytes)}"
                 val failNote = if (outcome.failed > 0) " · ${outcome.failed} no se pudieron borrar" else ""
                 s.copy(
                     working = false,
                     result = s.result?.without(removed),
                     selections = s.selections.mapValues { (_, sel) -> sel - removed },
                     storage = runCatching { StorageInfo.summary() }.getOrNull() ?: s.storage,
-                    message = "$verb ${formatSize(outcome.bytes)}$failNote",
+                    message = "$done$failNote",
                 )
             }
             loadTrash(purge = false)
@@ -231,7 +232,7 @@ class MainViewModel(private val app: Application) : AndroidViewModel(app) {
     fun restore(entry: TrashEntry) {
         viewModelScope.launch {
             val ok = withContext(Dispatchers.IO) { trashManager.restore(entry) }
-            _state.update { it.copy(message = if (ok) "Restaurado: ${entry.name}" else "No se pudo restaurar ${entry.name}") }
+            _state.update { it.copy(message = if (ok) "${entry.name} ha vuelto a su carpeta" else "No se pudo restaurar ${entry.name}") }
             loadTrash(purge = false)
         }
     }
@@ -244,7 +245,7 @@ class MainViewModel(private val app: Application) : AndroidViewModel(app) {
                 it.copy(
                     working = false,
                     storage = runCatching { StorageInfo.summary() }.getOrNull() ?: it.storage,
-                    message = "Papelera vaciada: ${formatSize(freed)} liberados",
+                    message = "Papelera vaciada. Has liberado ${formatSize(freed)}",
                 )
             }
             loadTrash(purge = false)
@@ -263,7 +264,7 @@ class MainViewModel(private val app: Application) : AndroidViewModel(app) {
                     update = r,
                     checkingUpdate = false,
                     // Al abrir la app solo se avisa si hay versión nueva; a mano, siempre se responde.
-                    showUpdateDialog = manual || r is Updater.Result.Available,
+                    showUpdateDialog = manual || (r is Updater.Result.Available && it.hasStorageAccess),
                 )
             }
         }
@@ -293,7 +294,7 @@ class MainViewModel(private val app: Application) : AndroidViewModel(app) {
                 _state.update {
                     it.copy(
                         downloadProgress = null,
-                        update = Updater.Result.Error(e.message ?: "No se pudo descargar"),
+                        update = Updater.Result.Error("La descarga no se completó"),
                     )
                 }
             }

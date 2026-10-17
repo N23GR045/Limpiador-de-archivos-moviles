@@ -19,11 +19,11 @@ enum class Category(
     val grouped: Boolean,
     val autoSelect: AutoSelect,
 ) {
-    DUPLICATES("Duplicados", "Archivos con contenido idéntico", true, AutoSelect.ALL_BUT_KEEPER),
-    LARGE("Archivos grandes", "Vídeos pesados, APKs e instaladores", false, AutoSelect.NONE),
-    TEMP("Temporales y caché", "Archivos .tmp, logs, miniaturas y caché", false, AutoSelect.ALL),
-    OLD_DOWNLOADS("Descargas antiguas", "Sin tocar desde hace más de 90 días", false, AutoSelect.NONE),
-    BLURRY("Fotos borrosas", "Imágenes desenfocadas o movidas", false, AutoSelect.NONE),
+    DUPLICATES("Duplicados", "Copias exactas del mismo archivo", true, AutoSelect.ALL_BUT_KEEPER),
+    LARGE("Archivos grandes", "Vídeos pesados e instaladores de apps", false, AutoSelect.NONE),
+    TEMP("Temporales y caché", "Restos que las apps vuelven a crear", false, AutoSelect.ALL),
+    OLD_DOWNLOADS("Descargas antiguas", "Descargas de hace más de 3 meses", false, AutoSelect.NONE),
+    BLURRY("Fotos borrosas", "Fotos movidas o desenfocadas", false, AutoSelect.NONE),
     SIMILAR("Fotos similares", "Ráfagas y fotos casi iguales", true, AutoSelect.ALL_BUT_KEEPER),
 }
 

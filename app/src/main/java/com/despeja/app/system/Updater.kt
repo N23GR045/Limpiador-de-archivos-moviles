@@ -46,14 +46,14 @@ object Updater {
         try {
             val conn = open(API).apply { setRequestProperty("Accept", "application/vnd.github+json") }
             val code = conn.responseCode
-            if (code != 200) return@withContext Result.Error("GitHub respondió $code")
+            if (code != 200) return@withContext Result.Error("El servidor de actualizaciones no responde")
             val json = JSONObject(conn.inputStream.bufferedReader().use { it.readText() })
             conn.disconnect()
 
             val body = json.optString("body")
             val remoteBuild = Regex("""build:\s*(\d+)""").find(body)?.groupValues?.get(1)?.toIntOrNull()
                 ?: Regex("""compilaci[oó]n\s+(\d+)""").find(body)?.groupValues?.get(1)?.toIntOrNull()
-                ?: return@withContext Result.Error("No se encontró el número de versión")
+                ?: return@withContext Result.Error("No se pudo leer la versión publicada")
 
             // Si hay varios APK (p. ej. con el nombre antiguo), se usa el subido más recientemente.
             val assets = json.optJSONArray("assets")
@@ -78,7 +78,7 @@ object Updater {
                 Result.UpToDate
             }
         } catch (e: Exception) {
-            Result.Error("Sin conexión con GitHub")
+            Result.Error("No hay conexión")
         }
     }
 

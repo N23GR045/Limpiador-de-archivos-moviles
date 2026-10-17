@@ -64,7 +64,7 @@ fun ScanningScreen(progress: StorageScanner.Progress?, onCancel: () -> Unit) {
 
             Spacer(Modifier.height(28.dp))
             Text(
-                progress?.phase?.label ?: "Preparando…",
+                progress?.phase?.label ?: "Empezando…",
                 style = MaterialTheme.typography.titleLarge,
             )
             Text(

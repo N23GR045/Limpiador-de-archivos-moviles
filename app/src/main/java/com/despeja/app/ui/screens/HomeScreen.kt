@@ -110,7 +110,7 @@ fun HomeScreen(
                 Icon(Icons.Outlined.Search, contentDescription = null)
                 Spacer(Modifier.width(8.dp))
                 Text(
-                    if (state.result == null) "Análisis rápido" else "Volver a analizar",
+                    if (state.result == null) "Analizar ahora" else "Analizar de nuevo",
                     style = MaterialTheme.typography.titleMedium,
                 )
             }
@@ -125,7 +125,7 @@ fun HomeScreen(
                 )
             }
 
-            SectionTitle("Qué se puede limpiar")
+            SectionTitle("Qué puedes limpiar")
             Category.entries.forEach { cat ->
                 CategoryCard(cat, state.result?.categories?.get(cat), state.selections[cat]?.size ?: 0) {
                     onOpenCategory(cat)
@@ -168,19 +168,19 @@ private fun PermissionCard(onRequest: () -> Unit) {
                 Icon(Icons.Outlined.FolderOpen, contentDescription = null, tint = MaterialTheme.colorScheme.onTertiaryContainer)
                 Spacer(Modifier.width(10.dp))
                 Text(
-                    "Necesito acceso a tus archivos",
+                    "Para empezar, permite el acceso a tus archivos",
                     style = MaterialTheme.typography.titleMedium,
                     color = MaterialTheme.colorScheme.onTertiaryContainer,
                 )
             }
             Text(
-                "Para encontrar duplicados, archivos grandes y fotos repetidas hay que poder leer todo el almacenamiento. " +
-                    "Nada sale del teléfono y nunca se borra nada sin que lo confirmes.",
+                "Espacio Libre revisa tu almacenamiento para encontrar copias, archivos pesados y fotos repetidas. " +
+                    "Todo se analiza en el móvil: no se envía nada y no se borra nada sin tu permiso.",
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onTertiaryContainer,
                 modifier = Modifier.padding(vertical = 8.dp),
             )
-            FilledTonalButton(onClick = onRequest) { Text("Conceder acceso") }
+            FilledTonalButton(onClick = onRequest) { Text("Permitir acceso") }
         }
     }
 }
@@ -237,14 +237,14 @@ private fun StorageCard(state: UiState) {
                     val reclaim = result?.categories?.values?.sumOf { it.reclaimable } ?: 0L
                     if (result != null) {
                         Text(
-                            "Hasta ${formatSize(reclaim)} recuperables",
+                            "Puedes liberar hasta ${formatSize(reclaim)}",
                             style = MaterialTheme.typography.bodyMedium,
                             color = MaterialTheme.colorScheme.primary,
                             fontWeight = FontWeight.Medium,
                         )
                     } else {
                         Text(
-                            "Analiza para ver qué ocupa espacio",
+                            "Analiza el móvil para saber qué ocupa espacio",
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                         )
@@ -277,7 +277,7 @@ private fun CategoryCard(category: Category, result: CategoryResult?, selected: 
                 Text(category.title, style = MaterialTheme.typography.titleSmall)
                 val sub = when {
                     result == null -> category.description
-                    result.count == 0 -> "Nada que limpiar"
+                    result.count == 0 -> "Todo limpio"
                     category.grouped -> "${plural(result.groups.size, "grupo")} · ${plural(result.count, "archivo")}"
                     else -> plural(result.count, "archivo")
                 }
@@ -321,7 +321,7 @@ private fun AppCacheCard(state: UiState, onClick: () -> Unit) {
                 Text("Caché de aplicaciones", style = MaterialTheme.typography.titleSmall)
                 Text(
                     when {
-                        !state.hasUsageAccess -> "Requiere permiso de acceso a uso"
+                        !state.hasUsageAccess -> "Toca para ver cuánto ocupa cada app"
                         state.loadingAppCaches -> "Calculando…"
                         else -> plural(state.appCaches.size, "app")
                     },

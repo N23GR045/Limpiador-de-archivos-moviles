@@ -41,12 +41,12 @@ fun UpdateDialog(
             onDismissRequest = onDismiss,
             properties = DialogProperties(dismissOnClickOutside = !downloading, dismissOnBackPress = !downloading),
             icon = { Icon(Icons.Outlined.SystemUpdate, contentDescription = null) },
-            title = { Text(if (downloaded) "Actualización descargada" else "Versión 1.0.${result.build} disponible") },
+            title = { Text(if (downloaded) "Actualización descargada" else "Nueva versión: 1.0.${result.build}") },
             text = {
                 Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
                     Text(
-                        "Tienes la ${Updater.currentName}. Se descarga directamente desde GitHub " +
-                            "(${formatSize(result.sizeBytes)}) y se instala encima: tus datos y la papelera se conservan.",
+                        "Tienes la ${Updater.currentName}. La descarga ocupa ${formatSize(result.sizeBytes)} " +
+                            "y se instala encima de la actual, sin perder nada.",
                         style = MaterialTheme.typography.bodyMedium,
                     )
                     if (result.notes.isNotBlank()) {
@@ -78,8 +78,8 @@ fun UpdateDialog(
                             )
                         }
                         needsInstallPermission -> Text(
-                            "Android pide permiso: activa «Permitir de esta fuente» para Espacio Libre y vuelve. " +
-                                "La instalación empezará sola.",
+                            "Android necesita tu permiso: activa «Permitir de esta fuente» y vuelve. " +
+                                "La instalación seguirá sola.",
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.primary,
                         )
@@ -106,7 +106,7 @@ fun UpdateDialog(
         Updater.Result.UpToDate -> AlertDialog(
             onDismissRequest = onDismiss,
             title = { Text("Estás al día") },
-            text = { Text("Tienes la última versión publicada en GitHub (${Updater.currentName}).") },
+            text = { Text("Tienes la última versión (${Updater.currentName}).") },
             confirmButton = { TextButton(onClick = onDismiss) { Text("Vale") } },
         )
 

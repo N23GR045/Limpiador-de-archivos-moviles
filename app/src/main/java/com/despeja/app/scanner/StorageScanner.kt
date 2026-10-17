@@ -19,10 +19,10 @@ import kotlin.coroutines.coroutineContext
 class StorageScanner(private val context: Context, private val cache: HashCache) {
 
     enum class Phase(val label: String) {
-        WALKING("Recorriendo carpetas"),
-        DUPLICATES("Buscando duplicados"),
-        IMAGES("Analizando fotos"),
-        DONE("Terminando"),
+        WALKING("Buscando archivos"),
+        DUPLICATES("Comparando copias"),
+        IMAGES("Revisando fotos"),
+        DONE("Preparando resultados"),
     }
 
     data class Progress(

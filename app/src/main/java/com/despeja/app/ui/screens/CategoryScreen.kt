@@ -173,7 +173,7 @@ fun CategoryScreen(
                         } else {
                             val what = if (filter == TypeFilter.ALL) "archivo" else filter.label.lowercase().removeSuffix("s")
                             Text(
-                                if (selectedFiles.isEmpty()) "Marca archivos para limpiar"
+                                if (selectedFiles.isEmpty()) "Marca lo que quieras limpiar"
                                 else "Limpiar ${plural(selectedFiles.size, what)} · ${formatSize(selectedBytes)}",
                             )
                         }
@@ -185,7 +185,7 @@ fun CategoryScreen(
     ) { padding ->
         if (result == null || allGroups.isEmpty()) {
             Box(Modifier.padding(padding).fillMaxSize(), contentAlignment = Alignment.Center) {
-                Text("Nada que limpiar aquí ✨", style = MaterialTheme.typography.titleMedium)
+                Text("Aquí ya está todo limpio", style = MaterialTheme.typography.titleMedium)
             }
             return@Scaffold
         }
@@ -303,11 +303,11 @@ fun CategoryScreen(
 @Composable
 private fun Hint(category: Category) {
     val text = when (category) {
-        Category.DUPLICATES -> "Se ha marcado todo salvo el original (el más antiguo) de cada grupo. Toca una miniatura para verla."
-        Category.LARGE -> "Archivos de más de 100 MB e instaladores. Nada viene marcado: elige tú. Toca un vídeo para verlo."
-        Category.TEMP -> "Archivos que las apps regeneran solas. Seguros de borrar."
-        Category.OLD_DOWNLOADS -> "Descargas sin modificar en más de 90 días. Revisa antes de borrar."
-        Category.BLURRY -> "Detección automática: toca cada miniatura para revisarla antes de borrar."
+        Category.DUPLICATES -> "Ya están marcadas las copias; el original (el más antiguo) de cada grupo se conserva. Toca una miniatura para verla."
+        Category.LARGE -> "Archivos de más de 100 MB e instaladores. No hay nada marcado: elige qué quieres quitar. Toca un vídeo para verlo."
+        Category.TEMP -> "Las apps vuelven a crear estos archivos cuando los necesitan. Puedes borrarlos sin problema."
+        Category.OLD_DOWNLOADS -> "Descargas de hace más de 3 meses. Revísalas antes de borrar: puede haber documentos que quieras guardar."
+        Category.BLURRY -> "La detección es automática y puede fallar: toca cada foto para revisarla antes de borrar."
         Category.SIMILAR -> "Se conserva la foto más nítida de cada grupo y se marcan las demás."
     }
     Text(
@@ -466,10 +466,13 @@ private fun ConfirmDeleteDialog(
         title = { Text("¿Limpiar ${plural(count, "archivo")}?") },
         text = {
             Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                Text("Se liberarán ${formatSize(selectedBytes)}.")
+                Text(
+                    if (useTrash) "Irán a la papelera. Para liberar los ${formatSize(selectedBytes)} ya, vacíala después."
+                    else "Se borrarán para siempre y liberarás ${formatSize(selectedBytes)}.",
+                )
                 if (wipedGroups > 0) {
                     Text(
-                        "Atención: en ${plural(wipedGroups, "grupo")} has marcado todas las copias, así que no quedará ninguna.",
+                        "Ojo: en ${plural(wipedGroups, "grupo")} has marcado todas las copias y no quedará ninguna.",
                         color = MaterialTheme.colorScheme.error,
                         style = MaterialTheme.typography.bodyMedium,
                     )
@@ -485,7 +488,7 @@ private fun ConfirmDeleteDialog(
                     Column {
                         Text("Mover a la papelera", style = MaterialTheme.typography.bodyMedium)
                         Text(
-                            "Recuperable 30 días. El espacio se libera al vaciarla.",
+                            "Podrás recuperarlos durante 30 días.",
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                         )
